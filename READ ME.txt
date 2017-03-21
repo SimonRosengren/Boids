@@ -1,0 +1,5 @@
+---------------------------Boids----------------------------
+This is an assignment for an AI-course at Malmö university
+-------------------------------------------------------------
+The boids, or in this case, ships are meant to immitate 
+flocking. 
