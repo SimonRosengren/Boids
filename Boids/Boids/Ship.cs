@@ -17,26 +17,31 @@ namespace Boids
         List<Ship> friends;
         float collisionTimer = 0;
         //Weights
-        float averageAngleWeight = 0.5f;
+        //float averageAngleWeight = 0.5f;
 
-        public Vector2 velocity;
+        public Vector2 allignVector;
+        public Vector2 coheseVector;
+
+        public Vector2 direction;
 
         public Ship(Texture2D tex, Vector2 pos)
         {
             this.tex = tex;
             this.pos = pos;
-            this.velocity = new Vector2((float)Game1.rnd.NextDouble(), (float)Game1.rnd.NextDouble());
-            friends = new List<Ship>();
-            
+            this.coheseVector = new Vector2((float)Game1.rnd.NextDouble(), (float)Game1.rnd.NextDouble());
+            this.allignVector = new Vector2((float)Game1.rnd.NextDouble(), (float)Game1.rnd.NextDouble());
+            this.direction = new Vector2((float)Game1.rnd.NextDouble(), (float)Game1.rnd.NextDouble());
+            friends = new List<Ship>();         
         }
         public void Update(GameTime time)
         {
-            WallCollision();
-            velocity.Normalize();
             FindFriends();
             SetAverageAngle();
+            Cohesion();
+            calcDirection();
+            WallCollision();
             UpdateCollisionTimer(time);
-            this.pos += velocity * (float)time.ElapsedGameTime.TotalSeconds * speed;
+            this.pos += direction * (float)time.ElapsedGameTime.TotalSeconds * speed;
         }
 
         private void UpdateCollisionTimer(GameTime time)
@@ -48,7 +53,7 @@ namespace Boids
         }
         public void Draw(SpriteBatch sb)
         {
-            sb.Draw(tex, getHitBox(), null,  Color.White, (float)Math.Atan2(velocity.Y , velocity.X), new Vector2(0, 0), SpriteEffects.None, 1);
+            sb.Draw(tex, getHitBox(), null,  Color.White, (float)Math.Atan2(direction.Y , direction.X), new Vector2(0, 0), SpriteEffects.None, 1);
         }
         public Rectangle getHitBox()
         {
@@ -63,12 +68,12 @@ namespace Boids
         {
             if (pos.X + 25 > Game1.windowBounds.X || pos.X < 25)
             {
-                velocity.X *= -1;
+                direction.X *= -1;
                 collisionTimer += 1f;
             }
             if (pos.Y + 25 > Game1.windowBounds.Y || pos.Y < 25)
             {
-                velocity.Y *= -1;
+                direction.Y *= -1;
                 collisionTimer += 1f;
             }
         }
@@ -101,20 +106,47 @@ namespace Boids
                 List<Vector2> directionsOfFriends = new List<Vector2>();
                 foreach (Ship s in friends)
                 {
-                    directionsOfFriends.Add(s.velocity);
+                    directionsOfFriends.Add(s.direction);
                 }
                 foreach (Vector2 v in directionsOfFriends)
                 {
-                    this.velocity.X += v.X;
-                    this.velocity.Y += v.Y;
+                    this.allignVector.X += v.X;
+                    this.allignVector.Y += v.Y;
                 }
-                velocity.X = velocity.X / (directionsOfFriends.Count + 1); //+1 because we dont want to miss our own vec
-                velocity.Y = velocity.Y / (directionsOfFriends.Count + 1);
+                allignVector.X = allignVector.X / (directionsOfFriends.Count + 1); //+1 because we dont want to miss our own vec and to not / by 0
+                allignVector.Y = allignVector.Y / (directionsOfFriends.Count + 1);
+                allignVector.Normalize();
             }
         }
-        void Flock()
+        /// <summary>
+        /// Steer towards the avarage point
+        /// of friends
+        /// </summary>
+        void Cohesion()
         {
-
+            if (collisionTimer <= 0.1f)
+            {
+                Vector2 avaragePos = this.pos;
+                foreach (Ship friend in friends)
+                {
+                    avaragePos.X += friend.pos.X;
+                    avaragePos.Y += friend.pos.Y;
+                }
+                if (friends.Count > 0)
+                {
+                    avaragePos.X = avaragePos.X / (friends.Count + 1);
+                    avaragePos.Y = avaragePos.Y / (friends.Count + 1);
+                    coheseVector = Vector2.Normalize(avaragePos - pos);
+                }
+                coheseVector.Normalize();
+            }
+            
+        }
+        void calcDirection()
+        {
+            this.direction.X = (coheseVector.X + allignVector.X) / 2;
+            this.direction.Y = (coheseVector.Y + allignVector.Y) / 2;
+            //this.direction.Normalize();
         }
     }
 }
