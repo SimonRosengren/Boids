@@ -9,20 +9,24 @@ namespace Boids
 {
     class Ship
     {
-
         Vector2 pos;
         Texture2D tex;
+        List<Ship> friends;
         float speed = 50;
         float friendDistance = 60;
-        List<Ship> friends;
+        float comfortDistance = 25f;
         float collisionTimer = 0;
-        //Weights
-        //float averageAngleWeight = 0.5f;
 
+        //Directions
+        public Vector2 direction;
         public Vector2 allignVector;
         public Vector2 coheseVector;
+        public Vector2 antiCrowdVector;
 
-        public Vector2 direction;
+        //Weights
+        float allignmentWeight = 3.2f;
+        float coheseWeight = 0.5f;
+        float antiCrowdWeight = 2.5f;
 
         public Ship(Texture2D tex, Vector2 pos)
         {
@@ -31,17 +35,20 @@ namespace Boids
             this.coheseVector = new Vector2((float)Game1.rnd.NextDouble(), (float)Game1.rnd.NextDouble());
             this.allignVector = new Vector2((float)Game1.rnd.NextDouble(), (float)Game1.rnd.NextDouble());
             this.direction = new Vector2((float)Game1.rnd.NextDouble(), (float)Game1.rnd.NextDouble());
-            friends = new List<Ship>();         
+            this.antiCrowdVector = new Vector2((float)Game1.rnd.NextDouble(), (float)Game1.rnd.NextDouble());
+            this.friends = new List<Ship>();         
         }
         public void Update(GameTime time)
         {
             FindFriends();
             SetAverageAngle();
             Cohesion();
+            AntiCrowding();
             calcDirection();
-            WallCollision();
+            BoarderSwap();
             UpdateCollisionTimer(time);
             this.pos += direction * (float)time.ElapsedGameTime.TotalSeconds * speed;
+            friends.Clear();
         }
 
         private void UpdateCollisionTimer(GameTime time)
@@ -53,7 +60,7 @@ namespace Boids
         }
         public void Draw(SpriteBatch sb)
         {
-            sb.Draw(tex, getHitBox(), null,  Color.White, (float)Math.Atan2(direction.Y , direction.X), new Vector2(0, 0), SpriteEffects.None, 1);
+            sb.Draw(tex, getHitBox(), null,  Color.White, (float)Math.Atan2(direction.Y , direction.X), new Vector2(tex.Bounds.Width / 2, tex.Bounds.Height / 2), SpriteEffects.None, 1);
         }
         public Rectangle getHitBox()
         {
@@ -75,6 +82,28 @@ namespace Boids
             {
                 direction.Y *= -1;
                 collisionTimer += 1f;
+            }
+        }
+        /// <summary>
+        /// Comes in on one side, out the other
+        /// </summary>
+        void BoarderSwap()
+        {
+            if (pos.X > Game1.windowBounds.X)
+            {
+                pos.X = 0;
+            }
+            if (pos.Y + 25 > Game1.windowBounds.Y)
+            {
+                pos.Y = 0;
+            }
+            if (pos.X < 0)
+            {
+                pos.X = Game1.windowBounds.X;
+            }
+            if (pos.Y < 0)
+            {
+                pos.Y = Game1.windowBounds.Y;
             }
         }
         /// <summary>
@@ -139,14 +168,38 @@ namespace Boids
                     coheseVector = Vector2.Normalize(avaragePos - pos);
                 }
                 coheseVector.Normalize();
-            }
-            
+            }         
+        }
+        void AntiCrowding()
+        {
+            if (collisionTimer <= 0.1f)
+            {
+                int counter = 0;
+                antiCrowdVector = new Vector2(0, 0);
+                foreach (Ship friend in friends)
+                {
+                    if (Vector2.Distance(friend.pos, this.pos) < comfortDistance)
+                    {
+                        counter++;
+                        antiCrowdVector.X = Vector2.Normalize(this.pos - friend.pos).X;
+                        antiCrowdVector.Y = Vector2.Normalize(this.pos - friend.pos).Y;
+                    }
+                }
+                if (counter != 0)
+                {
+                    antiCrowdVector.X /= counter;
+                    antiCrowdVector.Y /= counter;
+                    antiCrowdVector.Normalize();
+                }
+            }       
         }
         void calcDirection()
         {
-            this.direction.X = (coheseVector.X + allignVector.X) / 2;
-            this.direction.Y = (coheseVector.Y + allignVector.Y) / 2;
-            //this.direction.Normalize();
+            if (collisionTimer <= 0.1f)
+            {
+                this.direction.X = (antiCrowdVector.X * antiCrowdWeight) + (allignVector.X * allignmentWeight) + (coheseVector.X * coheseWeight);
+                this.direction.Y = (antiCrowdVector.Y * antiCrowdWeight) + (allignVector.Y * allignmentWeight) + (coheseVector.Y * coheseWeight);
+            }
         }
     }
 }
