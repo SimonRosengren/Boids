@@ -13,8 +13,10 @@ namespace Boids
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
         Texture2D boidTex;
+        Texture2D obstacleTex;
         SteeringBehaviourManager sbm = new SteeringBehaviourManager();
-        ButtonState lastMouseState;
+        ButtonState lastLeftMouseState;
+        ButtonState lastRightMouseState;
 
         public static Random rnd;
         public static Vector2 windowBounds;
@@ -37,6 +39,7 @@ namespace Boids
             rnd = new Random();
             windowBounds = new Vector2(Window.ClientBounds.Width, Window.ClientBounds.Height);
             boidTex = Content.Load<Texture2D>(@"simpleship");
+            obstacleTex = Content.Load<Texture2D>(@"obstacleCircle");
             base.Initialize();
             this.IsMouseVisible = true;
         }
@@ -73,12 +76,17 @@ namespace Boids
                 Exit();
             sbm.Update(gameTime);
             
-            if (Mouse.GetState().LeftButton == ButtonState.Pressed && lastMouseState != ButtonState.Pressed)
+            if (Mouse.GetState().LeftButton == ButtonState.Pressed && lastLeftMouseState != ButtonState.Pressed)
             {
                 sbm.AddShip(boidTex, Mouse.GetState().Position.ToVector2());
             }
+            if (Mouse.GetState().RightButton == ButtonState.Pressed && lastRightMouseState != ButtonState.Pressed)
+            {
+                sbm.AddObstacle(obstacleTex, Mouse.GetState().Position.ToVector2());
+            }
             // TODO: Add your update logic here
-            lastMouseState = Mouse.GetState().LeftButton;
+            lastLeftMouseState = Mouse.GetState().LeftButton;
+            lastRightMouseState = Mouse.GetState().RightButton;
             base.Update(gameTime);
         }
 

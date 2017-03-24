@@ -13,8 +13,9 @@ namespace Boids
         Texture2D tex;
         List<Ship> friends;
         float speed = 50;
-        float friendDistance = 60;
+        float friendDistance = 40;
         float comfortDistance = 25f;
+        float obstacleSafeDistance = 30f;
         float collisionTimer = 0;
 
         //Directions
@@ -22,11 +23,13 @@ namespace Boids
         public Vector2 allignVector;
         public Vector2 coheseVector;
         public Vector2 antiCrowdVector;
+        public Vector2 avoidObstacleVector;
 
         //Weights
         float allignmentWeight = 3.2f;
         float coheseWeight = 0.5f;
         float antiCrowdWeight = 2.5f;
+        float avoidObstacleWeight = 4.7f;
 
         public Ship(Texture2D tex, Vector2 pos)
         {
@@ -44,6 +47,7 @@ namespace Boids
             SetAverageAngle();
             Cohesion();
             AntiCrowding();
+            AvoidObstacles();
             calcDirection();
             BoarderSwap();
             UpdateCollisionTimer(time);
@@ -193,12 +197,35 @@ namespace Boids
                 }
             }       
         }
+        void AvoidObstacles()
+        {
+            if (collisionTimer <= 0.1f)
+            {
+                int counter = 0;
+                avoidObstacleVector = new Vector2(0, 0);
+                foreach (Obstacle obs in SteeringBehaviourManager.obstacles)
+                {
+                    if (Vector2.Distance(obs.pos, this.pos) < obstacleSafeDistance)
+                    {
+                        counter++;
+                        avoidObstacleVector.X = Vector2.Normalize(this.pos - obs.pos).X;
+                        avoidObstacleVector.Y = Vector2.Normalize(this.pos - obs.pos).Y;
+                    }
+                }
+                if (counter != 0)
+                {
+                    avoidObstacleVector.X /= counter;
+                    avoidObstacleVector.Y /= counter;
+                    avoidObstacleVector.Normalize();
+                }
+            }     
+        }
         void calcDirection()
         {
             if (collisionTimer <= 0.1f)
             {
-                this.direction.X = (antiCrowdVector.X * antiCrowdWeight) + (allignVector.X * allignmentWeight) + (coheseVector.X * coheseWeight);
-                this.direction.Y = (antiCrowdVector.Y * antiCrowdWeight) + (allignVector.Y * allignmentWeight) + (coheseVector.Y * coheseWeight);
+                this.direction.X = (antiCrowdVector.X * antiCrowdWeight) + (allignVector.X * allignmentWeight) + (coheseVector.X * coheseWeight) + (avoidObstacleVector.X * avoidObstacleWeight);
+                this.direction.Y = (antiCrowdVector.Y * antiCrowdWeight) + (allignVector.Y * allignmentWeight) + (coheseVector.Y * coheseWeight) + (avoidObstacleVector.Y * avoidObstacleWeight);
             }
         }
     }
