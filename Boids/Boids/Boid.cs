@@ -7,14 +7,13 @@ using System.Text;
 
 namespace Boids
 {
-    class Ship
+    class Boid
     {
-        Vector2 pos;
         Texture2D tex;
-        List<Ship> friends;
-        float speed = 50;
-        float friendDistance = 40;
-        float comfortDistance = 25f;
+        List<Boid> friends;
+        float speed = 70;
+        float friendDistance = 60;
+        float comfortDistance = 15f;
         float obstacleSafeDistance = 30f;
         float collisionTimer = 0;
 
@@ -26,12 +25,14 @@ namespace Boids
         public Vector2 avoidObstacleVector;
 
         //Weights
-        float allignmentWeight = 3.2f;
+        float allignmentWeight = 2.0f;
         float coheseWeight = 0.5f;
-        float antiCrowdWeight = 2.5f;
-        float avoidObstacleWeight = 4.7f;
+        float antiCrowdWeight = 1.5f;
+        float avoidObstacleWeight = 3.9f;
 
-        public Ship(Texture2D tex, Vector2 pos)
+        public Vector2 pos;
+
+        public Boid(Texture2D tex, Vector2 pos)
         {
             this.tex = tex;
             this.pos = pos;
@@ -39,7 +40,7 @@ namespace Boids
             this.allignVector = new Vector2((float)Game1.rnd.NextDouble(), (float)Game1.rnd.NextDouble());
             this.direction = new Vector2((float)Game1.rnd.NextDouble(), (float)Game1.rnd.NextDouble());
             this.antiCrowdVector = new Vector2((float)Game1.rnd.NextDouble(), (float)Game1.rnd.NextDouble());
-            this.friends = new List<Ship>();         
+            this.friends = new List<Boid>();         
         }
         public void Update(GameTime time)
         {
@@ -68,7 +69,7 @@ namespace Boids
         }
         public Rectangle getHitBox()
         {
-            return new Rectangle((int)pos.X, (int)pos.Y, 20, 20);
+            return new Rectangle((int)pos.X, (int)pos.Y, 10, 10);
         }
         /// <summary>
         /// Timer makes sure that we dont get stuck
@@ -116,7 +117,7 @@ namespace Boids
         /// </summary>
         void FindFriends()
         {
-            foreach (Ship friend in SteeringBehaviourManager.ships)
+            foreach (Boid friend in SteeringBehaviourManager.boids)
             {
                 if (friend == this)
                 {
@@ -137,7 +138,7 @@ namespace Boids
             if (collisionTimer <= 0.1f)
             {
                 List<Vector2> directionsOfFriends = new List<Vector2>();
-                foreach (Ship s in friends)
+                foreach (Boid s in friends)
                 {
                     directionsOfFriends.Add(s.direction);
                 }
@@ -160,7 +161,7 @@ namespace Boids
             if (collisionTimer <= 0.1f)
             {
                 Vector2 avaragePos = this.pos;
-                foreach (Ship friend in friends)
+                foreach (Boid friend in friends)
                 {
                     avaragePos.X += friend.pos.X;
                     avaragePos.Y += friend.pos.Y;
@@ -180,7 +181,7 @@ namespace Boids
             {
                 int counter = 0;
                 antiCrowdVector = new Vector2(0, 0);
-                foreach (Ship friend in friends)
+                foreach (Boid friend in friends)
                 {
                     if (Vector2.Distance(friend.pos, this.pos) < comfortDistance)
                     {
@@ -211,6 +212,12 @@ namespace Boids
                         avoidObstacleVector.X = Vector2.Normalize(this.pos - obs.pos).X;
                         avoidObstacleVector.Y = Vector2.Normalize(this.pos - obs.pos).Y;
                     }
+                }
+                if (Vector2.Distance(SteeringBehaviourManager.predetor.pos, this.pos) < obstacleSafeDistance)
+                {
+                    counter++;
+                    avoidObstacleVector.X = Vector2.Normalize(this.pos - SteeringBehaviourManager.predetor.pos).X;
+                    avoidObstacleVector.Y = Vector2.Normalize(this.pos - SteeringBehaviourManager.predetor.pos).Y;
                 }
                 if (counter != 0)
                 {

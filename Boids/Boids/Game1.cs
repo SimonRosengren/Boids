@@ -14,13 +14,12 @@ namespace Boids
         SpriteBatch spriteBatch;
         Texture2D boidTex;
         Texture2D obstacleTex;
-        SteeringBehaviourManager sbm = new SteeringBehaviourManager();
+        SteeringBehaviourManager sbm;
         ButtonState lastLeftMouseState;
         ButtonState lastRightMouseState;
 
         public static Random rnd;
         public static Vector2 windowBounds;
-
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -37,9 +36,14 @@ namespace Boids
         {
             // TODO: Add your initialization logic here
             rnd = new Random();
-            windowBounds = new Vector2(Window.ClientBounds.Width, Window.ClientBounds.Height);
             boidTex = Content.Load<Texture2D>(@"simpleship");
             obstacleTex = Content.Load<Texture2D>(@"obstacleCircle");
+            sbm = new SteeringBehaviourManager(boidTex);
+            graphics.PreferredBackBufferWidth = 1000;  // set this value to the desired width of your window
+            graphics.PreferredBackBufferHeight = 650;   // set this value to the desired height of your window
+            graphics.ApplyChanges();
+            windowBounds = new Vector2(Window.ClientBounds.Width, Window.ClientBounds.Height);
+            BuildWallAroundMap();
             base.Initialize();
             this.IsMouseVisible = true;
         }
@@ -99,10 +103,32 @@ namespace Boids
             GraphicsDevice.Clear(Color.CornflowerBlue);
             spriteBatch.Begin();
             sbm.Draw(spriteBatch);
+            
             spriteBatch.End();
             // TODO: Add your drawing code here
 
             base.Draw(gameTime);
+        }
+
+        public void BuildWallAroundMap()
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                sbm.AddObstacle(obstacleTex, new Vector2(i, 20));
+                sbm.AddObstacle(obstacleTex, new Vector2(i, 600));
+            }
+            for (int i = 0; i < 650; i++)
+            {
+                sbm.AddObstacle(obstacleTex, new Vector2(20, i));
+                sbm.AddObstacle(obstacleTex, new Vector2(950, i));
+
+            }
+            /*Adds 200 boids at the beggining*/
+            for (int i = 0; i < 50; i++)
+            {
+                sbm.AddShip(boidTex, new Vector2(rnd.Next(100, 800), rnd.Next(100, 400)));
+
+            }
         }
     }
 }
